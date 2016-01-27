@@ -95,7 +95,8 @@
 
         hosts_having_service = {};
         service_host = {};
-        services_count = {};
+        service_count = {};
+        failed_service_per_host = {};
         failed_service_count = {};
         host_service_count = {};
         services = [];
@@ -104,7 +105,7 @@
         data.forEach(function (record,loop) {
             host = record.key;
             host_services = d3.entries(record.value);
-            failed_service_count[host] = 0
+            failed_service_per_host[host] = 0
             host_service_count[host] = 0
             host_services.forEach(function (service) {
                 serviceName = service.key;
@@ -117,18 +118,20 @@
                 }
                 hosts_having_service[host][serviceName] = serviceStatus.state;
                 service_host[serviceName].push(host);
-                services_count[serviceName] = 1 + services_count[serviceName] || 0;
+                service_count[serviceName] = 1 + service_count[serviceName] || 0;
+                failed_service_count[serviceName] = 0 + failed_service_count[serviceName] || 0;
                 host_service_count[host] = 1 + host_service_count[host] || 0;
                 if (serviceStatus.state != "OK") {
-                    failed_service_count[host] = 1 + failed_service_count[host] || 0;
+                    failed_service_per_host[host] = 1 + failed_service_per_host[host] || 0;
+                    failed_service_count[serviceName] = 1 + failed_service_count[serviceName] || 0;
                 }
 
             });
         });
 
         // extract list of services
-        for (var key in services_count) {
-            if (services_count.hasOwnProperty(key)) {
+        for (var key in service_count) {
+            if (service_count.hasOwnProperty(key)) {
                 services.push(key);
             }
         }
@@ -137,27 +140,29 @@
 
         services = services.sort(
             function(a, b){
-                return services_count[b] - services_count[a];
-            });
+                return service_count[b] - service_count[a];
 
+            });
+        //console.log(JSON.stringify(services,null,2));
         // finally tranlate that into column id
         services_column = {};
         services.forEach(function(a,i) {
             services_column[a]=i+1;
         });
-        // console.log(JSON.stringify(failed_service_count,null,2));
+        // console.log(JSON.stringify(failed_service_per_host,null,2));
 
         data = data.sort ( function(a, b) {
-            //console.log("t:" + a.key + " r:" + JSON.stringify(failed_service_count[a.key],null,2));
-            diff = failed_service_count[b.key] - failed_service_count[a.key];
+            //console.log("t:" + a.key + " r:" + JSON.stringify(failed_service_per_host[a.key],null,2));
+            diff = failed_service_per_host[b.key] - failed_service_per_host[a.key];
             if (diff != 0) {
                 return diff;
             } else {
                 return host_service_count[b.key] - host_service_count[a.key];
             }
         })
-        all_services = []
-        host_labels = []
+        all_services = [];
+        host_labels = [];
+//        console.log(" r:" + JSON.stringify(failed_service_count,null,2));
         data.forEach(function (record,loop) {
             hostname = record.key;
             services = record.value;
@@ -170,10 +175,30 @@
                 }
             }
             host_service_list = host_service_list.sort(
-            function(a, b){
-                return services_count[b] - services_count[a];
+                function(a, b){
+                    // x = (failed_service_count[a] * 40) + service_count[a];
+                    // y = (failed_service_count[b] * 40) + service_count[b];
+
+                    // x = (failed_service_count[a]) + service_count[a];
+                    // y = (failed_service_count[b]) + service_count[b];
+
+                    x = service_count[a];
+                    y = service_count[b];
+                    if (x == y) {
+                        x = (failed_service_count[a]) + service_count[a];
+                        y = (failed_service_count[b]) + service_count[b];
+                        if (x == y) {
+                            if (a>b) return 1;
+                            else if (a<b) return -1;
+                            else return 0;
+                        } else {
+                            return y - x;
+                        }
+                    } else {
+                        return y - x;
+                    }
             });
-            re_services = {}
+            re_services = {};
             host_service_list.forEach(function(svcName,i) {
                 re_services[svcName]=i;
                 obj = {};
