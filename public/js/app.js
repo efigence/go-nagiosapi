@@ -81,7 +81,7 @@
     //     .attr('transform','translate(-10,'+axisHeight+') rotate(-90)');
     // initCalibration();
     loadData('/v1/all');
-    setInterval(function() { loadData('v1/all') },3000);
+    setInterval(function() { loadData('/v1/all') },3000);
   //  setTimeout(loadData('nagios.json'),6000);
     //setTimeout(loadData('nagios2.json'),9000);
 
