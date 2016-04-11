@@ -40,7 +40,7 @@ func main() {
 	r := render.New(render.Options{
 		IndentJSON: true,
 	})
-	if os.Args[1] == "" {
+	if len(os.Args) < 2 {
 		cfg.NagiosStatusFile = "t-data/status.dat.local"
 	} else {
 		cfg.NagiosStatusFile = os.Args[1]
