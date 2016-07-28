@@ -1,4 +1,4 @@
-This is a template for Go app with gom-managed deps
+This is a template for Go app with gom-managed deps. Requires [gom installed](https://github.com/mattn/gom)
 
 
 
