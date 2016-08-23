@@ -1,0 +1,11 @@
+---
+
+node_name: nagios.example.com
+
+listen_addr: 127.0.0.1:8000
+
+zerosvc:
+    zerosvc_endpoint: amqp://guest:guest@localhost:5672
+#    node_name: "test" # empty to set it to same as main node
+#    node_uuid: "" # generate one on boot
+    service_name: nagiosapi
