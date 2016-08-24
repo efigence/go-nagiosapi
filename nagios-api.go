@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/efigence/go-nagios"
+	"github.com/efigence/go-nagiosapi/config"
 	"github.com/op/go-logging"
+	"github.com/patrickdappollonio/goji-gzip"
 	"github.com/pmylund/go-cache"
-	"github.com/theosomefactory/goji-gzip"
 	"github.com/unrolled/render" // or "gopkg.in/unrolled/render.v1")
 	"github.com/zenazn/goji"
 	"github.com/zenazn/goji/web"
@@ -20,15 +21,7 @@ var version string
 var log = logging.MustGetLogger("main")
 var stdout_log_format = logging.MustStringFormatter("%{color:bold}%{time:2006-01-02T15:04:05.9999Z-07:00}%{color:reset}%{color} [%{level:.1s}] %{color:reset}%{shortpkg}[%{longfunc}] %{message}")
 
-type Config struct {
-	ListenAddr       string
-	NagiosStatusFile string
-	StaticDir        string
-	UpdateInterval   time.Duration
-}
-
 func main() {
-	var cfg Config
 	stderrBackend := logging.NewLogBackend(os.Stderr, "", 0)
 	stderrFormatter := logging.NewBackendFormatter(stderrBackend, stdout_log_format)
 	logging.SetBackend(stderrFormatter)
@@ -40,16 +33,18 @@ func main() {
 	r := render.New(render.Options{
 		IndentJSON: true,
 	})
-	if len(os.Args) < 2 {
-		cfg.NagiosStatusFile = "t-data/status.dat.local"
-	} else {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Errorf("Config error: %+v", err)
+		os.Exit(1)
+	}
+	if len(os.Args) >= 2 {
 		cfg.NagiosStatusFile = os.Args[1]
 	}
-	cfg.StaticDir = "./public"
-	if cfg.UpdateInterval == 0 {
-		cfg.UpdateInterval = time.Second * 30
+	if cfg.StatusUpdateInterval == 0 {
+		cfg.StatusUpdateInterval = 30 * 1001
 	}
-
+	log.Warningf("FF: %+v", cfg)
 	serializerCache := cache.New(30*time.Second, 5*time.Minute)
 	file, _ := os.Open(cfg.NagiosStatusFile)
 	st, err := nagios.LoadStatus(file)
@@ -57,7 +52,7 @@ func main() {
 	file.Close()
 
 	// set and run update timer
-	updateTimer := time.NewTicker(cfg.UpdateInterval)
+	updateTimer := time.NewTicker(time.Duration(cfg.StatusUpdateInterval) * time.Millisecond)
 	go func() {
 		for _ = range updateTimer.C {
 			log.Info("updating from file")
@@ -68,13 +63,14 @@ func main() {
 		}
 	}()
 
+	httpCfg := cfg.Endpoints.Http
 	app := webapi.NewWebapp()
 	app.NagiosStatus = st
 	goji.Use(gzip.Compress)
-	goji.Get("/s/*", http.StripPrefix("/s", http.FileServer(http.Dir(cfg.StaticDir))))
-	goji.Get("/", http.FileServer(http.Dir(cfg.StaticDir)))
-	goji.Get("/index.html", http.FileServer(http.Dir(cfg.StaticDir)))
-	goji.Get("/favico.ico", http.FileServer(http.Dir(cfg.StaticDir+"/img")))
+	goji.Get("/s/*", http.StripPrefix("/s", http.FileServer(http.Dir(httpCfg.StaticDir))))
+	goji.Get("/", http.FileServer(http.Dir(httpCfg.StaticDir)))
+	goji.Get("/index.html", http.FileServer(http.Dir(httpCfg.StaticDir)))
+	goji.Get("/favico.ico", http.FileServer(http.Dir(httpCfg.StaticDir+"/img")))
 
 	goji.Get("/v1/all", func(c web.C, w http.ResponseWriter, req *http.Request) {
 		w.Header().Set(render.ContentType, "application/json")

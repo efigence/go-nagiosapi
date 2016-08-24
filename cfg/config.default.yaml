@@ -1,11 +1,17 @@
 ---
 
 node_name: nagios.example.com
+# in milliseconds
+status_update_interval: 3000
 
-listen_addr: 127.0.0.1:8000
+# status_file: /var/lib/nagios/status.dat
+endpoints:
+    zerosvc:
+        zerosvc_endpoint: amqp://guest:guest@localhost:5672
+        #    node_name: "test" # empty to set it to same as main node
+        #    node_uuid: "" # generate one on boot
+        service_name: nagiosapi
 
-zerosvc:
-    zerosvc_endpoint: amqp://guest:guest@localhost:5672
-#    node_name: "test" # empty to set it to same as main node
-#    node_uuid: "" # generate one on boot
-    service_name: nagiosapi
+    http:
+        static_dir: ./public
+        listen_addr: 127.0.0.1:8001
