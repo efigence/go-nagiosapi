@@ -1,7 +1,3 @@
-This is a template for Go app with gom-managed deps. Requires [gom installed](https://github.com/mattn/gom)
+# go-nagiosapi
 
-
-
-## Features
-
-* Makefile automatically generates version number from `git describe`, just add `var version string` in main section of your code to get it
+Demo app for https://github.com/efigence/go-nagios
