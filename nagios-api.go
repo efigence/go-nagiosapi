@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/efigence/go-nagios"
 	"github.com/efigence/go-nagiosapi/config"
+	"github.com/efigence/go-nagiosapi/src/webapi"
 	"github.com/op/go-logging"
 	"github.com/patrickdappollonio/goji-gzip"
 	"github.com/pmylund/go-cache"
@@ -14,7 +15,6 @@ import (
 	"net/http"
 	"os"
 	"time"
-	"webapi"
 )
 
 var version string
